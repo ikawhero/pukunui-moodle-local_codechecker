@@ -1,3 +1,8 @@
+This plugin is a fork from moodlehq/moodle-local_codechecker and has been customised
+for use within Pukunui.
+
+Original README below
+----------------------------------------------------------------------------------------
 This Moodle plugin uses the Pear CodeSniffer library to check that code follows
 the Moodle coding guidelines http://docs.moodle.org/en/Development:Coding_style
 
