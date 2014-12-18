@@ -22,32 +22,31 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../../config.php');
+require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->dirroot . '/local/codechecker/locallib.php');
 
 $path = optional_param('path', '', PARAM_PATH);
-if ($path) {
-    $pageparams = array('path' => $path);
-} else {
-    $pageparams = array();
-}
+$exclude = optional_param('exclude', '', PARAM_NOTAGS);
 
-require_login();
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+$pageparams = array();
+if ($path) {
+    $pageparams['path'] = $path;
+}
+if ($exclude) {
+    $pageparams['exclude'] = $exclude;
+}
 
 admin_externalpage_setup('local_codechecker', '', $pageparams);
 
-$PAGE->set_heading($SITE->fullname);
-$PAGE->set_title($SITE->fullname . ': ' . get_string('pluginname', 'local_codechecker'));
-
+// We are going to need lots of memory and time.
 raise_memory_limit(MEMORY_HUGE);
 set_time_limit(300);
 
 $mform = new local_codechecker_form(new moodle_url('/local/codechecker/'));
-$mform->set_data((object) array('path' => $path));
+$mform->set_data((object)$pageparams);
 if ($data = $mform->get_data()) {
-    redirect(new moodle_url('/local/codechecker/', array('path' => $data->path)));
+    redirect(new moodle_url('/local/codechecker/', $pageparams));
 }
 
 if ($path) {
@@ -63,30 +62,29 @@ echo $OUTPUT->header();
 
 if ($path) {
     if ($fullpath) {
+        $reportfile = make_temp_directory('phpcs') . '/phpcs_' . random_string(10) . '.xml';
         $phpcs = new PHP_CodeSniffer();
-        $phpcs->setCli(new local_codechecker_codesniffer_cli());
-        $phpcs->setIgnorePatterns(local_codesniffer_get_ignores());
+        $cli = new local_codechecker_codesniffer_cli();
+        $cli->setReport('local_codechecker'); // Using own custom xml format for easier handling later.
+        $cli->setReportFile($reportfile); // Send the report to dataroot temp.
+        $phpcs->setCli($cli);
+        $phpcs->setIgnorePatterns(local_codesniffer_get_ignores($exclude));
         $phpcs->process(local_codechecker_clean_path($fullpath),
                 local_codechecker_clean_path($CFG->dirroot . '/local/codechecker/moodle'));
-        $problems = $phpcs->getFilesErrors();
-        local_codechecker_check_other_files(local_codechecker_clean_path($fullpath), $problems);
-        ksort($problems);
+        // Save the xml report file to dataroot/temp.
+        $phpcs->reporting->printReport('local_codechecker', false, $reportfile);
+        // Load the XML file to proceed with the rest of checks.
+        $xml = simplexml_load_file($reportfile);
 
-        $errors = 0;
-        $warnings = 0;
-        foreach ($problems as $file => $info) {
-            $errors += $info['numErrors'];
-            $warnings += $info['numWarnings'];
-        }
-        if ($errors + $warnings > 0) {
-            $summary = get_string('numerrorswarnings', 'local_codechecker',
-                    array('numErrors' => $errors, 'numWarnings' => $warnings));
-        } else {
-            $summary = '';
-        }
+        // Look for other problems, not handled by codesniffer.
+        local_codechecker_check_other_files(local_codechecker_clean_path($fullpath), $xml);
+        list($numerrors, $numwarnings) = local_codechecker_count_problems($xml);
 
-        echo $output->report($problems, $phpcs, $summary);
+        // Output the results report.
+        echo $output->report($xml, $numerrors, $numwarnings);
 
+        // And clean the report temp file.
+        @unlink($reportfile);
     } else {
         echo $output->invald_path_message($path);
     }

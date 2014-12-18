@@ -8,7 +8,7 @@
  * @package   PHP_CodeSniffer
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @author    Marc McIntyre <mmcintyre@squiz.net>
- * @copyright 2006-2012 Squiz Pty Ltd (ABN 77 084 670 600)
+ * @copyright 2006-2014 Squiz Pty Ltd (ABN 77 084 670 600)
  * @license   https://github.com/squizlabs/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
  * @link      http://pear.php.net/package/PHP_CodeSniffer
  */
@@ -22,9 +22,9 @@
  * @package   PHP_CodeSniffer
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @author    Marc McIntyre <mmcintyre@squiz.net>
- * @copyright 2006-2012 Squiz Pty Ltd (ABN 77 084 670 600)
+ * @copyright 2006-2014 Squiz Pty Ltd (ABN 77 084 670 600)
  * @license   https://github.com/squizlabs/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
- * @version   Release: 1.4.4
+ * @version   Release: @package_version@
  * @link      http://pear.php.net/package/PHP_CodeSniffer
  */
 class Squiz_Sniffs_WhiteSpace_OperatorSpacingSniff implements PHP_CodeSniffer_Sniff
@@ -51,8 +51,14 @@ class Squiz_Sniffs_WhiteSpace_OperatorSpacingSniff implements PHP_CodeSniffer_Sn
         $comparison = PHP_CodeSniffer_Tokens::$comparisonTokens;
         $operators  = PHP_CodeSniffer_Tokens::$operators;
         $assignment = PHP_CodeSniffer_Tokens::$assignmentTokens;
+        $inlineIf   = array(
+                       T_INLINE_THEN,
+                       T_INLINE_ELSE,
+                      );
 
-        return array_unique(array_merge($comparison, $operators, $assignment));
+        return array_unique(
+            array_merge($comparison, $operators, $assignment, $inlineIf)
+        );
 
     }//end register()
 
@@ -61,8 +67,8 @@ class Squiz_Sniffs_WhiteSpace_OperatorSpacingSniff implements PHP_CodeSniffer_Sn
      * Processes this sniff, when one of its tokens is encountered.
      *
      * @param PHP_CodeSniffer_File $phpcsFile The current file being checked.
-     * @param int                  $stackPtr  The position of the current token in the
-     *                                        stack passed in $tokens.
+     * @param int                  $stackPtr  The position of the current token in
+     *                                        the stack passed in $tokens.
      *
      * @return void
      */
@@ -90,9 +96,20 @@ class Squiz_Sniffs_WhiteSpace_OperatorSpacingSniff implements PHP_CodeSniffer_Sn
 
         if ($tokens[$stackPtr]['code'] === T_EQUAL) {
             // Skip for '=&' case.
-            if (isset($tokens[($stackPtr + 1)]) === true && $tokens[($stackPtr + 1)]['code'] === T_BITWISE_AND) {
+            if (isset($tokens[($stackPtr + 1)]) === true
+                && $tokens[($stackPtr + 1)]['code'] === T_BITWISE_AND
+            ) {
                 return;
             }
+        }
+
+        // Skip short ternary such as: $foo = $bar ?: true;
+        if (($tokens[$stackPtr]['code'] == T_INLINE_THEN
+            && $tokens[$stackPtr + 1]['code'] == T_INLINE_ELSE)
+            || ($tokens[$stackPtr - 1]['code'] == T_INLINE_THEN
+            && $tokens[$stackPtr]['code'] == T_INLINE_ELSE)
+        ) {
+                return;
         }
 
         if ($tokens[$stackPtr]['code'] === T_BITWISE_AND) {

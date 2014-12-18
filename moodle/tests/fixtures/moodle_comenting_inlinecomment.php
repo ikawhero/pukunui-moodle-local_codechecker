@@ -1,4 +1,6 @@
 <?php
+defined('MOODLE_INTERNAL') || die(); // Make this always the 1st line in all CS fixtures.
+
 /// Three slashes are incorrect.
 
 //// four are also wrong. Not to talk about the missing upper and final dot
@@ -42,3 +44,28 @@ class commented_class {
 /** A defined comment, this is wrong! */
 defined('ADEFINED', true);
 
+// Comment separators are allowed if pure (from 20 to 120 chars). All below are correct.
+
+// --------------------
+
+// ------------------------------------------------------------------------------------------------------------------------
+
+// But not if mixed with text or punctuations or smaller than 20 chars or after code. All below are wrong.
+
+// -------------------
+
+// -------------------------------------------------------------------------------------------------------------------------
+
+// ---------- nonono ----------
+
+// -----------.......----------
+
+// .----------------------------
+
+// ----------------------------.
+
+// .---------------------------.
+
+echo 'hello'; // --------------------------
+
+echo 'hello'; // A--------------.

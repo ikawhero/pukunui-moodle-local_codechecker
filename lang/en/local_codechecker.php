@@ -26,9 +26,14 @@
 
 $string['check'] = 'Check code';
 $string['clihelp'] = 'Check some PHP code against the Moodle coding guidelines.
+Options:
+  --interactive, -i Stops after every file allowing to continue with the next
+                    file or to repeat the check against the same one.
+  --help, -h        Shows this information
 Example:
   php run.php local/codechecker';
 $string['error_find'] = 'Folder search failed';
+$string['exclude'] = 'Exclude';
 $string['other_eol'] = 'Whitespace at end of line';
 $string['other_tab'] = 'Tab character not permitted';
 $string['other_toolong'] = 'Line longer than maximum 180 characters';
@@ -40,10 +45,11 @@ $string['filesfound'] = 'Files found: {$a}';
 $string['filesummary'] = '{$a->path} - {$a->count}';
 $string['info'] = '<p>Checks code against some aspects of the {$a->link}.</p>
 <p>Enter a path relative to the Moodle code root, for example: {$a->path}.</p>
-<p>You can enter either a specific PHP file, or to a folder to check all the files it contains.</p>';
+<p>You can enter either a specific PHP file, or to a folder to check all the files it contains.</p>
+<p>To exclude files, a comma separated list of substr matching paths can be used, for example: {$a->excludeexample}. Asterisks are allowed as wildchars at any place.</p>';
 $string['invalidpath'] = 'Invalid path {$a}';
 $string['moodlecodingguidelines'] = 'Moodle coding guidelines';
-$string['numerrorswarnings'] = '{$a->numErrors} error(s) and {$a->numWarnings} warning(s)';
+$string['numerrorswarnings'] = '{$a->errors} error(s) and {$a->warnings} warning(s)';
 $string['path'] = 'Path to check';
 $string['pluginname'] = 'Code checker';
 $string['recheckfile'] = 'Re-check just this file';

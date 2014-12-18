@@ -7,7 +7,7 @@
  * @category  PHP
  * @package   PHP_CodeSniffer
  * @author    Greg Sherwood <gsherwood@squiz.net>
- * @copyright 2006-2012 Squiz Pty Ltd (ABN 77 084 670 600)
+ * @copyright 2006-2014 Squiz Pty Ltd (ABN 77 084 670 600)
  * @license   https://github.com/squizlabs/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
  * @link      http://pear.php.net/package/PHP_CodeSniffer
  */
@@ -18,9 +18,9 @@
  * @category  PHP
  * @package   PHP_CodeSniffer
  * @author    Greg Sherwood <gsherwood@squiz.net>
- * @copyright 2006-2012 Squiz Pty Ltd (ABN 77 084 670 600)
+ * @copyright 2006-2014 Squiz Pty Ltd (ABN 77 084 670 600)
  * @license   https://github.com/squizlabs/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
- * @version   Release: 1.4.4
+ * @version   Release: @package_version@
  * @link      http://pear.php.net/package/PHP_CodeSniffer
  */
 class Generic_Sniffs_Classes_DuplicateClassNameSniff implements PHP_CodeSniffer_Sniff
@@ -59,13 +59,30 @@ class Generic_Sniffs_Classes_DuplicateClassNameSniff implements PHP_CodeSniffer_
     {
         $tokens = $phpcsFile->getTokens();
 
-        $namespace = '';
-        $stackPtr  = $phpcsFile->findNext(array(T_CLASS, T_INTERFACE, T_NAMESPACE), 0);
+        $namespace  = '';
+        $findTokens = array(
+                       T_CLASS,
+                       T_INTERFACE,
+                       T_NAMESPACE,
+                       T_CLOSE_TAG,
+                      );
+
+        $stackPtr = $phpcsFile->findNext($findTokens, ($stackPtr + 1));
         while ($stackPtr !== false) {
+            if ($tokens[$stackPtr]['code'] === T_CLOSE_TAG) {
+                // We can stop here. The sniff will continue from the next open
+                // tag when PHPCS reaches that token, if there is one.
+                return;
+            }
+
             // Keep track of what namespace we are in.
             if ($tokens[$stackPtr]['code'] === T_NAMESPACE) {
                 $nsEnd = $phpcsFile->findNext(
-                    array(T_NS_SEPARATOR, T_STRING, T_WHITESPACE),
+                    array(
+                     T_NS_SEPARATOR,
+                     T_STRING,
+                     T_WHITESPACE,
+                    ),
                     ($stackPtr + 1),
                     null,
                     true
@@ -95,13 +112,13 @@ class Generic_Sniffs_Classes_DuplicateClassNameSniff implements PHP_CodeSniffer_
                     $phpcsFile->addWarning($error, $stackPtr, 'Found', $data);
                 } else {
                     $this->foundClasses[$compareName] = array(
-                                                        'file' => $phpcsFile->getFilename(),
-                                                        'line' => $tokens[$stackPtr]['line'],
-                                                       );
+                                                         'file' => $phpcsFile->getFilename(),
+                                                         'line' => $tokens[$stackPtr]['line'],
+                                                        );
                 }
             }
 
-            $stackPtr = $phpcsFile->findNext(array(T_CLASS, T_INTERFACE, T_NAMESPACE), ($stackPtr + 1));
+            $stackPtr = $phpcsFile->findNext($findTokens, ($stackPtr + 1));
         }//end while
 
     }//end process()
